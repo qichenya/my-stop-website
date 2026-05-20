@@ -1,23 +1,280 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
 <head>
-<title>Welcome to qichen-website</title>
-<link href="style.css" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>错误 500 - 服务器内部错误</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #fafafa;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #1d1d1f;
+        }
+
+        .content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .error-icon {
+            width: 96px;
+            height: 96px;
+            margin-bottom: 32px;
+            background: linear-gradient(135deg, #6750a4 0%, #7f67be 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .error-icon svg {
+            width: 48px;
+            height: 48px;
+            fill: #ffffff;
+        }
+
+        .error-code {
+            font-size: 72px;
+            font-weight: 700;
+            color: #6750a4;
+            line-height: 1;
+            margin-bottom: 16px;
+            cursor: pointer;
+            user-select: none;
+            transition: transform 0.2s ease;
+            word-break: break-all;
+            max-width: 90vw;
+        }
+
+        .error-code:hover {
+            transform: scale(1.05);
+        }
+
+        .error-code:active {
+            transform: scale(0.95);
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1d1d1f;
+            margin-bottom: 12px;
+        }
+
+        p {
+            font-size: 16px;
+            color: #6e6e73;
+            line-height: 1.6;
+            max-width: 400px;
+        }
+    </style>
 </head>
 <body>
+    <div class="content">
+        <div class="error-icon">
+            <svg viewBox="0 0 24 24">
+                <path d="M12,2C6.48,2,2,6.48,2,12s4.48,10,10,10s10-4.48,10-10S17.52,2,12,2z M13,17h-2v-2h2V17z M13,13h-2V7h2V13z"/>
+            </svg>
+        </div>
 
-<!-- Background image div -->
-<div class="bgimage">
-  <!-- Page div -->
-  <div class="page" id="pageid" align="center">
-    <!-- Welcome text -->
-    <h1><font color="#FF9800" >&lt;</font>Welcome to qichen-website<font color="#FF9800" >/&gt;</font></h1>
-    <!-- Slide text -->
-    <p><span class="pagetextanimation">很抱歉本网站正在维护喵！</span></p>
-    <!-- Arrow -->
-    <div class="arrow" onclick="test()"></div>
-  </div>
-</div>
+        <div class="error-code" id="errorCode">500</div>
 
+        <h1 id="errorTitle">服务器内部错误</h1>
+
+        <p id="errorDesc">
+            很抱歉，网站遇到了技术问题，无法正常加载。
+            我们的团队正在尽快处理，请稍后再试。
+        </p>
+    </div>
+
+    <script>
+        const errorCode = document.getElementById('errorCode');
+        const errorTitle = document.getElementById('errorTitle');
+        const errorDesc = document.getElementById('errorDesc');
+        let currentValue = 500;
+        let startTime = null;
+        let animationId = null;
+        let baseValue = 500;
+        let interactionCount = 0;
+        let hoverStartTime = null;
+        let hasWaitedTwoSeconds = false;
+        let hasReached50000 = false;
+        let hasReachedInfinity = false;
+        let multiplyInterval = null;
+
+        function formatNumber(num) {
+            return Math.floor(num).toLocaleString('zh-CN', { useGrouping: false });
+        }
+
+        function crashBrowser() {
+            const memoryHog = [];
+            let iteration = 0;
+            
+            function allocateMemory() {
+                try {
+                    for (let i = 0; i < 100; i++) {
+                        memoryHog.push(new Array(100000).fill(Math.random()));
+                    }
+                    iteration++;
+                    
+                    if (iteration < 100) {
+                        setTimeout(allocateMemory, 10);
+                    }
+                } catch (e) {
+                    console.log('Browser memory exhausted');
+                }
+            }
+            
+            allocateMemory();
+        }
+
+        function checkInfinity() {
+            if (!isFinite(currentValue) && !hasReachedInfinity) {
+                hasReachedInfinity = true;
+                errorTitle.textContent = '你屏幕真大';
+                errorDesc.textContent = '';
+                
+                if (multiplyInterval) {
+                    clearInterval(multiplyInterval);
+                }
+                
+                crashBrowser();
+                return true;
+            }
+            return false;
+        }
+
+        function checkValueThreshold() {
+            if (currentValue >= 50000 && !hasReached50000) {
+                hasReached50000 = true;
+                errorTitle.textContent = '服务器内部没有任何错误';
+                errorDesc.textContent = '很抱歉，网站没有遇到任何技术问题，而且还能加载。 我们的团队只是懒得做而已，请稍后别试。';
+                
+                if (animationId) {
+                    cancelAnimationFrame(animationId);
+                    animationId = null;
+                }
+                
+                multiplyInterval = setInterval(function() {
+                    currentValue = currentValue * 10;
+                    errorCode.textContent = formatNumber(currentValue);
+                    
+                    if (checkInfinity()) {
+                        return;
+                    }
+                    
+                    const codeWidth = errorCode.offsetWidth;
+                    const viewportWidth = window.innerWidth;
+                    
+                    if (codeWidth >= viewportWidth * 0.9) {
+                        clearInterval(multiplyInterval);
+                        crashBrowser();
+                    }
+                }, 10);
+            }
+        }
+
+        function animate(timestamp) {
+            if (!startTime) startTime = timestamp;
+            
+            const elapsed = timestamp - startTime;
+            
+            if (interactionCount >= 5) {
+                currentValue = Math.floor(baseValue + Math.log(elapsed + 1) * 100000);
+            } else {
+                currentValue = Math.floor(baseValue * Math.pow(1.00005, elapsed));
+            }
+            
+            errorCode.textContent = formatNumber(currentValue);
+            checkValueThreshold();
+            
+            if (hasReached50000) {
+                return;
+            }
+            
+            if (checkInfinity()) {
+                return;
+            }
+            
+            const codeWidth = errorCode.offsetWidth;
+            const viewportWidth = window.innerWidth;
+            
+            if (codeWidth >= viewportWidth * 0.9) {
+                crashBrowser();
+                return;
+            }
+            
+            animationId = requestAnimationFrame(animate);
+        }
+
+        function checkHoverDuration() {
+            if (hoverStartTime && !hasWaitedTwoSeconds) {
+                const elapsed = Date.now() - hoverStartTime;
+                
+                if (elapsed >= 2000) {
+                    hasWaitedTwoSeconds = true;
+                    if (!animationId && !hasReached50000) {
+                        animationId = requestAnimationFrame(animate);
+                    }
+                } else {
+                    requestAnimationFrame(checkHoverDuration);
+                }
+            }
+        }
+
+        function incrementInteraction() {
+            interactionCount++;
+        }
+
+        errorCode.addEventListener('mouseenter', function() {
+            hoverStartTime = Date.now();
+            hasWaitedTwoSeconds = false;
+            baseValue = currentValue;
+            requestAnimationFrame(checkHoverDuration);
+        });
+
+        errorCode.addEventListener('mouseleave', function() {
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+            hoverStartTime = null;
+            hasWaitedTwoSeconds = false;
+        });
+
+        errorCode.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            incrementInteraction();
+            currentValue = currentValue * 2;
+            baseValue = currentValue;
+            startTime = null;
+            errorCode.textContent = formatNumber(currentValue);
+            checkValueThreshold();
+        });
+
+        document.addEventListener('click', function(e) {
+            if (!errorCode.contains(e.target)) {
+                incrementInteraction();
+                if (animationId) {
+                    cancelAnimationFrame(animationId);
+                    animationId = null;
+                }
+            }
+        });
+    </script>
 </body>
 </html>
